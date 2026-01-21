@@ -1,0 +1,31 @@
+# Source code
+src/
+tests/
+benchmarks/
+examples/
+tsup.config.ts
+tsconfig.json
+
+# Development files
+.github/
+.vscode/
+.idea/
+
+# Logs and debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env*
+
+# Coverage
+coverage/
+
+# Build artifacts (keep dist/)
+# dist/ is included in package.json files

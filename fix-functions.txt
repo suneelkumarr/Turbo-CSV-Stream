@@ -1,0 +1,37 @@
+/**
+ * Check if path matches pattern (supports wildcards)
+ */
+export function matchPath(path: string, pattern: string): boolean {
+  // Exact match
+  if (path === pattern) return true;
+  
+  // Convert glob pattern to regex
+  // * matches any characters except dot (single level)
+  // ? matches single character
+  const regexPattern = pattern
+    .replace(/\./g, '\\.')
+    .replace(/\*/g, '[^.]*')
+    .replace(/\?/g, '.');
+  
+  const regex = new RegExp(`^${regexPattern}$`);
+  return regex.test(path);
+}
+
+/**
+ * Check if a path should be included based on include/exclude patterns
+ */
+export function shouldIncludePath(
+  path: string,
+  includePaths?: string[],
+  excludePaths?: string[]
+): boolean {
+  if (excludePaths && excludePaths.some(pattern => matchPath(path, pattern))) {
+    return false;
+  }
+  
+  if (includePaths && includePaths.length > 0) {
+    return includePaths.some(pattern => matchPath(path, pattern));
+  }
+  
+  return true;
+}

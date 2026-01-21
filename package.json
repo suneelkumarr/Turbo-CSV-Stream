@@ -1,0 +1,102 @@
+{
+  "name": "turbo-csv-stream",
+  "version": "1.1.0",
+  "description": "Ultra-fast, reliable, and feature-rich CSV parser for Node.js with streaming, workers, schema validation, SQL-like queries, CSV generation, and JSON conversion",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "turbo-csv": "./dist/cli/index.js",
+    "csv2json": "./dist/cli/index.js",
+    "json2csv": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./worker": {
+      "require": "./dist/workers/parser-worker.js",
+      "import": "./dist/workers/parser-worker.mjs"
+    },
+    "./generator": {
+      "require": "./dist/generators/csv-generator.js",
+      "import": "./dist/generators/csv-generator.mjs",
+      "types": "./dist/generators/csv-generator.d.ts"
+    },
+    "./transform": {
+      "require": "./dist/transform/stream-transform.js",
+      "import": "./dist/transform/stream-transform.mjs",
+      "types": "./dist/transform/stream-transform.d.ts"
+    },
+    "./json-csv": {
+      "require": "./dist/utils/json-csv.js",
+      "import": "./dist/utils/json-csv.mjs",
+      "types": "./dist/utils/json-csv.d.ts"
+    },
+    "./sync": {
+      "require": "./dist/core/sync.js",
+      "import": "./dist/core/sync.mjs",
+      "types": "./dist/core/sync.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "benchmark": "tsx benchmarks/benchmark.ts",
+    "benchmark:compare": "tsx benchmarks/compare.ts",
+    "benchmark:performance": "tsx benchmarks/performance-suite.ts",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "csv",
+    "parser",
+    "streaming",
+    "fast",
+    "worker-threads",
+    "schema-validation",
+    "typescript",
+    "transform",
+    "sql",
+    "query",
+    "generator",
+    "json",
+    "csv2json",
+    "json2csv",
+    "ndjson",
+    "rfc4180",
+    "cli"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.3",
+    "csv-stringify": "^6.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "csv-parse": "^5.5.3",
+    "fast-csv": "^5.0.1",
+    "papaparse": "^5.4.1",
+    "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/turbo-csv.git"
+  }
+}
