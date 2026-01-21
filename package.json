@@ -12,33 +12,33 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "require": "./dist/index.js",
-      "import": "./dist/index.mjs",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/index.mjs"
     },
     "./worker": {
       "require": "./dist/workers/parser-worker.js",
       "import": "./dist/workers/parser-worker.mjs"
     },
     "./generator": {
+      "types": "./dist/generators/csv-generator.d.ts",
       "require": "./dist/generators/csv-generator.js",
-      "import": "./dist/generators/csv-generator.mjs",
-      "types": "./dist/generators/csv-generator.d.ts"
+      "import": "./dist/generators/csv-generator.mjs"
     },
     "./transform": {
+      "types": "./dist/transform/stream-transform.d.ts",
       "require": "./dist/transform/stream-transform.js",
-      "import": "./dist/transform/stream-transform.mjs",
-      "types": "./dist/transform/stream-transform.d.ts"
+      "import": "./dist/transform/stream-transform.mjs"
     },
     "./json-csv": {
+      "types": "./dist/utils/json-csv.d.ts",
       "require": "./dist/utils/json-csv.js",
-      "import": "./dist/utils/json-csv.mjs",
-      "types": "./dist/utils/json-csv.d.ts"
+      "import": "./dist/utils/json-csv.mjs"
     },
     "./sync": {
+      "types": "./dist/core/sync.d.ts",
       "require": "./dist/core/sync.js",
-      "import": "./dist/core/sync.mjs",
-      "types": "./dist/core/sync.d.ts"
+      "import": "./dist/core/sync.mjs"
     }
   },
   "files": [
