@@ -183,6 +183,12 @@ export function extractKeys(
   return keys;
 }
 
+// Pre-compiled regexes
+const INT_REGEX = /^-?\d+$/;
+const FLOAT_REGEX = /^-?\d+\.?\d*(?:e[+-]?\d+)?$/i;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/;
+const QUOTE_GLOBAL_REGEX = /"/g;
+
 /**
  * Escape a field value for CSV
  */
@@ -208,14 +214,21 @@ export function escapeCSVField(
     return emptyValue;
   }
 
-  const needsQuote = options.wrapStrings || 
-                     str.includes(delimiter) || 
-                     str.includes(quote) || 
-                     str.includes('\n') ||
-                     str.includes('\r');
+  // Optimization: fast path for common simple delimiters
+  const isSimple = delimiter === ',' && quote === '"';
+  
+  const needsQuote = options.wrapStrings || (
+    isSimple 
+      ? (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r'))
+      : (str.includes(delimiter) || str.includes(quote) || str.includes('\n') || str.includes('\r'))
+  );
 
   if (needsQuote) {
-    return quote + str.replace(new RegExp(quote, 'g'), quote + quote) + quote;
+    if (quote === '"') {
+      return '"' + str.replace(QUOTE_GLOBAL_REGEX, '""') + '"';
+    } else {
+      return quote + str.replace(new RegExp(quote, 'g'), quote + quote) + quote;
+    }
   }
 
   return str;
@@ -239,25 +252,28 @@ export function parseCSVField(
   }
 
   if (options.dynamicTyping) {
+    const lower = str.toLowerCase();
+    
     // Boolean
-    if (str.toLowerCase() === 'true') return true;
-    if (str.toLowerCase() === 'false') return false;
+    if (lower === 'true') return true;
+    if (lower === 'false') return false;
     
     // Null
-    if (str.toLowerCase() === 'null') return null;
+    if (lower === 'null') return null;
     
-    // Number
-    if (/^-?\d+$/.test(str)) {
+    // Number - Optimization: Check simple integer first
+    if (INT_REGEX.test(str)) {
       const num = parseInt(str, 10);
       if (Number.isSafeInteger(num)) return num;
     }
-    if (/^-?\d+\.?\d*(?:e[+-]?\d+)?$/i.test(str)) {
+    
+    if (FLOAT_REGEX.test(str)) {
       const num = parseFloat(str);
       if (!isNaN(num) && isFinite(num)) return num;
     }
     
     // ISO Date
-    if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/.test(str)) {
+    if (DATE_REGEX.test(str)) {
       const date = new Date(str);
       if (!isNaN(date.getTime())) return date;
     }

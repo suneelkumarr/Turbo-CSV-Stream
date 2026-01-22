@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     'workers/parser-worker': 'src/workers/parser-worker.ts',
+    'cli/index': 'src/cli/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: true,

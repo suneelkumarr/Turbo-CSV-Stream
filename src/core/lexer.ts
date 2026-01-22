@@ -495,7 +495,31 @@ export class CSVLexer {
     }
 
     // Zero-copy extraction using slice
-    let value = input.slice(start, this.position);
+    let startOffset = start;
+    let endOffset = this.position;
+
+    // Optimization: Trim common whitespace (space/tab) before slicing to avoid extra allocation
+    // This handles the most common case (99%) without memory penalty
+    if (this.options.trim || this.options.ltrim) {
+      while (startOffset < endOffset) {
+        const c = input.charCodeAt(startOffset);
+        if (c !== 32 && c !== 9) break;
+        startOffset++;
+      }
+    }
+
+    if (this.options.trim || this.options.rtrim) {
+      while (endOffset > startOffset) {
+        const c = input.charCodeAt(endOffset - 1);
+        if (c !== 32 && c !== 9) break;
+        endOffset--;
+      }
+    }
+
+    let value = input.slice(startOffset, endOffset);
+    
+    // Fallback to full trim if needed (for other whitespace characters),
+    // but in most cases (space/tab) this will be a no-op returning the same string instance
     value = this.trimField(value);
 
     return {
@@ -583,8 +607,9 @@ export class CSVLexer {
     if (this.customEol && char === this.customEolCharCode) {
       return true;
     }
-    // Standard newlines: \n (10) or \r (13)
-    return char === CHAR_LF || char === CHAR_CR;
+    // Use lookup table for standard newlines (faster than multiple comparisons)
+    // Safety check for non-ASCII characters
+    return char < 256 && this.charType[char] === CSVLexer.CHAR_NEWLINE;
   }
 
   private advance(): void {

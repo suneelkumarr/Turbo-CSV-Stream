@@ -54,7 +54,7 @@
     "benchmark:performance": "tsx benchmarks/performance-suite.ts",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build && npm run test"
+    "prepublishOnly": "npm run build && npx vitest run"
   },
   "keywords": [
     "csv",

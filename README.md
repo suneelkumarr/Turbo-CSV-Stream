@@ -1137,11 +1137,11 @@ function processData() {
 
 | Operation | Throughput | Memory |
 |-----------|-----------|---------|
-| Parse small CSV (3 rows) | ~150,000 ops/sec | ~50 KB |
-| Parse medium CSV (100 rows) | ~15,000 ops/sec | ~500 KB |
-| Parse large CSV (1000 rows) | ~1,500 ops/sec | ~5 MB |
-| Stringify (100 rows) | ~20,000 ops/sec | ~400 KB |
-| Nested JSON conversion | ~8,000 ops/sec | ~2 MB |
+| Parse small CSV (3 rows) | ~290,000 ops/sec | ~50 KB |
+| Parse medium CSV (100 rows) | ~45,000 ops/sec | ~400 KB |
+| Parse large CSV (1000 rows) | ~2,900 ops/sec | ~5 MB |
+| Stringify (100 rows) | ~35,000 ops/sec | ~2.5 MB |
+| Nested JSON conversion | ~14,000 ops/sec | ~2 MB |
 | CSV escaping | ~4,000,000 ops/sec | ~10 KB |
 
 Run benchmarks:
@@ -1396,13 +1396,13 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 
 ## 📄 License
 
-MIT © [Your Name]
+MIT © Suneel Kumar
 
 ---
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/yourusername/turbo-csv-stream)
+- [GitHub Repository](https://github.com/suneelkumarr/Turbo-CSV-Stream)
 - [npm Package](https://www.npmjs.com/package/turbo-csv-stream)
 - [Documentation](https://turbo-csv-stream.dev)
 - [Changelog](CHANGELOG.md)

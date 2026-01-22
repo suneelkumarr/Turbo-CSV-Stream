@@ -15,7 +15,6 @@ import {
   generateObjects,
 } from '../src/index';
 import {
-  measurePerformance,
   StringBuilder,
   escapeCSVFieldOptimized,
   clearOptimizationCaches,

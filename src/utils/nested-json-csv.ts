@@ -142,6 +142,9 @@ export class CircularReferenceError extends Error {
 // Path Utilities
 // ============================================
 
+// Pre-compile regex for path building
+const DIGIT_REGEX = /^\d+$/;
+
 /**
  * Build a path string with proper notation
  */
@@ -150,18 +153,19 @@ export function buildPath(
   separator: string = '.',
   arrayNotation: 'brackets' | 'underscore' | 'none' = 'brackets'
 ): string {
-  let result = '';
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0]!;
+
+  let result = parts[0]!;
   
-  for (let i = 0; i < parts.length; i++) {
+  for (let i = 1; i < parts.length; i++) {
     const part = parts[i]!;
     
-    if (i === 0) {
-      result = part;
-      continue;
-    }
+    // Optimization: Check if part starts with a digit before running regex
+    // '0' is 48, '9' is 57
+    const firstCode = part.charCodeAt(0);
     
-    // Check if part is array index
-    if (/^\d+$/.test(part)) {
+    if (firstCode >= 48 && firstCode <= 57 && DIGIT_REGEX.test(part)) {
       if (arrayNotation === 'brackets') {
         result += `[${part}]`;
       } else if (arrayNotation === 'underscore') {
@@ -235,6 +239,32 @@ export function extractNestedPaths(
   currentPath: string[] = [],
   currentDepth: number = 0
 ): Map<string, any> {
+  const result = new Map<string, any>();
+  
+  // Use internal recursive function for performance
+  extractNestedPathsRecursive(
+    obj,
+    options,
+    visited,
+    currentPath,
+    currentDepth,
+    result
+  );
+  
+  return result;
+}
+
+/**
+ * Internal recursive function to avoid map merging and allocation overhead
+ */
+function extractNestedPathsRecursive(
+  obj: any,
+  options: NestedJsonToCsvOptions,
+  visited: Set<any>,
+  currentPath: string[],
+  currentDepth: number,
+  result: Map<string, any>
+): void {
   const {
     maxDepth = Infinity,
     pathSeparator = '.',
@@ -246,113 +276,127 @@ export function extractNestedPaths(
     nestedStrategy = 'flatten',
   } = options;
 
-  const result = new Map<string, any>();
-
   // Check depth limit
   if (currentDepth >= maxDepth) {
     const path = buildPath(currentPath, pathSeparator, arrayIndexNotation);
     result.set(path, obj);
-    return result;
+    return;
   }
 
   // Check for null/undefined
   if (obj === null || obj === undefined) {
     const path = buildPath(currentPath, pathSeparator, arrayIndexNotation);
     result.set(path, obj);
-    return result;
+    return;
   }
 
   // Check for circular reference
-  if (detectCircular && typeof obj === 'object' && visited.has(obj)) {
-    const path = buildPath(currentPath, pathSeparator, arrayIndexNotation);
-    result.set(path, circularValue);
-    return result;
-  }
-
-  // Add to visited set
-  if (typeof obj === 'object') {
-    visited.add(obj);
+  if (detectCircular && typeof obj === 'object') {
+    if (visited.has(obj)) {
+      const path = buildPath(currentPath, pathSeparator, arrayIndexNotation);
+      result.set(path, circularValue);
+      return;
+    }
   }
 
   // Handle primitives and dates
   if (typeof obj !== 'object' || obj instanceof Date) {
     const path = buildPath(currentPath, pathSeparator, arrayIndexNotation);
     result.set(path, obj);
-    return result;
+    return;
+  }
+
+  // Add to visited set for this branch
+  if (typeof obj === 'object') {
+    visited.add(obj);
   }
 
   // Handle arrays
   if (Array.isArray(obj)) {
     if (skipEmpty && obj.length === 0) {
-      return result;
+      visited.delete(obj);
+      return;
     }
 
     if (arrayStrategy === 'join') {
       const path = buildPath(currentPath, pathSeparator, arrayIndexNotation);
       result.set(path, obj);
-      return result;
     } else if (arrayStrategy === 'first') {
       if (obj.length > 0) {
-        return extractNestedPaths(obj[0], options, visited, currentPath, currentDepth);
+        extractNestedPathsRecursive(obj[0], options, visited, currentPath, currentDepth, result);
       }
-      return result;
     } else if (arrayStrategy === 'last') {
       if (obj.length > 0) {
-        return extractNestedPaths(obj[obj.length - 1], options, visited, currentPath, currentDepth);
+        extractNestedPathsRecursive(obj[obj.length - 1], options, visited, currentPath, currentDepth, result);
       }
-      return result;
     } else if (arrayStrategy === 'expand-columns') {
       // Expand array elements into separate columns
       for (let i = 0; i < obj.length; i++) {
         const element = obj[i];
-        const elementPaths = extractNestedPaths(
+        
+        // Push index to path
+        currentPath.push(String(i));
+        
+        extractNestedPathsRecursive(
           element,
           options,
-          new Set(visited),
-          [...currentPath, String(i)],
-          currentDepth + 1
+          visited,
+          currentPath,
+          currentDepth + 1,
+          result
         );
         
-        for (const [p, v] of elementPaths) {
-          result.set(p, v);
-        }
+        // Pop index
+        currentPath.pop();
       }
-      return result;
     }
+    
+    // Cleanup visited
+    visited.delete(obj);
+    return;
   }
 
   // Handle objects
-  if (skipEmpty && Object.keys(obj).length === 0) {
-    return result;
+  const keys = Object.keys(obj);
+  if (skipEmpty && keys.length === 0) {
+    visited.delete(obj);
+    return;
   }
 
   if (nestedStrategy === 'preserve' && currentDepth > 0) {
     const path = buildPath(currentPath, pathSeparator, arrayIndexNotation);
     result.set(path, JSON.stringify(obj));
-    return result;
+    visited.delete(obj);
+    return;
   }
 
   if (nestedStrategy === 'ignore' && currentDepth > 0) {
-    return result;
+    visited.delete(obj);
+    return;
   }
 
   // Flatten object
-  for (const [key, value] of Object.entries(obj)) {
-    const newPath = [...currentPath, key];
-    const valuePaths = extractNestedPaths(
+  for (const key of keys) {
+    const value = obj[key];
+    
+    // Push key to path
+    currentPath.push(key);
+    
+    extractNestedPathsRecursive(
       value,
       options,
-      new Set(visited),
-      newPath,
-      currentDepth + 1
+      visited,
+      currentPath,
+      currentDepth + 1,
+      result
     );
     
-    for (const [p, v] of valuePaths) {
-      result.set(p, v);
-    }
+    // Pop key
+    currentPath.pop();
   }
-
-  return result;
+  
+  // Cleanup visited (backtracking)
+  visited.delete(obj);
 }
 
 /**

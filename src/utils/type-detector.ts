@@ -7,20 +7,30 @@ import type { Primitive, ColumnType } from '../types';
 export class TypeDetector {
   private readonly trueValues = new Set(['true', '1', 'yes', 'on', 'y']);
   private readonly falseValues = new Set(['false', '0', 'no', 'off', 'n', '']);
-  private nullValues: string[] = [];
-  private booleanValues = { true: this.trueValues, false: this.falseValues };
+  private nullValues: Set<string>; // Changed to Set for O(1) lookup
+  private booleanValues: { true: Set<string>; false: Set<string> };
   private dateFormats: string[] = [];
 
+  // Pre-compiled regex for number detection
+  // Optimization: Allow scientific notation (e.g. 1e10) which is standard JSON number format
+  private static readonly NUMBER_REGEX = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/;
+
   constructor(options: { nullValues?: string[]; booleanValues?: { true: string[]; false: string[] }; dateFormats?: string[] } = {}) {
-    if (options.nullValues) {
-      this.nullValues = options.nullValues;
-    }
+    // Optimization: Use Set for nullValues
+    this.nullValues = options.nullValues 
+      ? new Set(options.nullValues.map(v => v.toLowerCase())) 
+      : new Set();
+
     if (options.booleanValues) {
       this.booleanValues = {
         true: new Set(options.booleanValues.true.map(v => v.toLowerCase())),
         false: new Set(options.booleanValues.false.map(v => v.toLowerCase())),
       };
+    } else {
+      // Default boolean values
+      this.booleanValues = { true: this.trueValues, false: this.falseValues };
     }
+
     if (options.dateFormats) {
       this.dateFormats = options.dateFormats;
     }
@@ -30,20 +40,29 @@ export class TypeDetector {
    * Detect the type of a value and convert it
    */
   detect(value: string): Primitive {
-    if (this.isNull(value)) {
+    // Fast path for empty string
+    if (!value) {
+      if (this.nullValues.has('')) return null;
+      if (this.booleanValues.false.has('')) return false;
+      return value;
+    }
+
+    // Optimization: Check for nulls first
+    const lowerValue = value.toLowerCase();
+    if (this.nullValues.size > 0 && this.nullValues.has(lowerValue)) {
       return null;
     }
 
-    // Try number
-    if (/^-?\d+(\.\d+)?$/.test(value)) {
+    // Optimization: Try number first (most common non-string type)
+    // and use regex test before Number() to avoid overhead of creating Number object for non-numbers
+    if (TypeDetector.NUMBER_REGEX.test(value)) {
       const num = Number(value);
       if (!isNaN(num)) {
         return num;
       }
     }
 
-    // Try boolean
-    const lowerValue = value.toLowerCase();
+    // Try boolean - reuse lowerValue
     if (this.booleanValues.true.has(lowerValue)) {
       return true;
     }
@@ -51,18 +70,21 @@ export class TypeDetector {
       return false;
     }
 
-    // Try date
-    for (const _format of this.dateFormats) {
-      // Simple date parsing, can be improved
-      const date = new Date(value);
-      if (!isNaN(date.getTime())) {
-        return date;
+    // Try date - slowest check last
+    if (this.dateFormats.length > 0) {
+      for (const _format of this.dateFormats) {
+        // Simple date parsing, can be improved
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
       }
     }
 
     // Default to string
     return value;
   }
+
 
   /**
    * Alias for detect
@@ -105,7 +127,7 @@ export class TypeDetector {
    * Check if a value represents null
    */
   isNull(value: string): boolean {
-    return !value || this.nullValues.includes(value.toLowerCase());
+    return !value || this.nullValues.has(value.toLowerCase());
   }
 
   /**

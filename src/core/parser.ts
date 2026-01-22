@@ -108,7 +108,8 @@ export class CSVParser<T extends CSVRow = CSVRow> {
     const maxRows = this.options.maxRows ?? Infinity;
 
     while (data.length < maxRows) {
-      const fields = this.lexer.parseRow();
+      // Optimization: use parseRowFast for better performance
+      const fields = this.lexer.parseRowFast();
       
       if (fields === null) break;
       
@@ -190,11 +191,6 @@ export class CSVParser<T extends CSVRow = CSVRow> {
       if (!header && this.options.header !== false) continue;
 
       const finalHeader = header || `field${i + 1}`;
-
-      // Trim whitespace
-      if (this.options.trim && typeof value === 'string') {
-        value = value.trim();
-      }
 
       // Dynamic typing
       if (this.options.dynamicTyping) {
